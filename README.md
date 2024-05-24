@@ -1,8 +1,9 @@
-# Integrating a Language Server in a Visual Studio Code Extension
+# Pycimen LSP
+
 
 <img src="image.png" alt="alt text" width="900" height="600">
 
-# Pycimen LSP
+# Integrating a Language Server in a Visual Studio Code Extension
 
 Pycimen LSP is an implementation of the Language Server Protocol (LSP) for Python. This document explains what LSP is, how it works, and how to use Pycimen LSP with VSCode.
 
