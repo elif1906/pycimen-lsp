@@ -6,158 +6,157 @@ import (
 	"log"
 	"os"
 
-	"github.com/umutyalcinn/lsp/internal/analysis"
-	"github.com/umutyalcinn/lsp/internal/lsp"
-	"github.com/umutyalcinn/lsp/internal/rpc"
+	"github.com/elif1906/lsp/internal/analysis"
+	"github.com/elif1906/lsp/internal/lsp"
+	"github.com/elif1906/lsp/internal/rpc"
 )
 
+func main() {
+	logger := getLogger("/Users/elif1906/source/elif1906/lsp/logs/log.txt")
 
-func main(){
-    logger := getLogger("/Users/umutyalcinn/source/umutyalcinn/lsp/logs/log.txt")
-    
-    /*
-    listener, err := net.Listen("tcp", ":2000")
+	/*
+	   listener, err := net.Listen("tcp", ":2000")
 
-    if err != nil {
-        log.Fatal(err)
-    }
-    */
+	   if err != nil {
+	       log.Fatal(err)
+	   }
+	*/
 
-    scanner := bufio.NewScanner(os.Stdin)
-    scanner.Split(rpc.Split)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Split(rpc.Split)
 
-    state := analysis.NewState()
+	state := analysis.NewState()
 
-    logger.Println("starting lsp server")
+	logger.Println("starting lsp server")
 
-    for scanner.Scan() {
-        msg := scanner.Bytes()
-        handleMessage(logger, msg, state)
-    }
+	for scanner.Scan() {
+		msg := scanner.Bytes()
+		handleMessage(logger, msg, state)
+	}
 
-    logger.Println("Hey, i'm done")
+	logger.Println("Hey, i'm done")
 
-    /*
+	/*
 
-    defer listener.Close()
+	   defer listener.Close()
 
-    for {
-        conn, err := listener.Accept()
+	   for {
+	       conn, err := listener.Accept()
 
 
-        if err != nil {
-            log.Fatal(err)
-        }
+	       if err != nil {
+	           log.Fatal(err)
+	       }
 
-        go func (c net.Conn) {
-            defer c.Close()
+	       go func (c net.Conn) {
+	           defer c.Close()
 
-            buffer := make([]byte, 999999)
+	           buffer := make([]byte, 999999)
 
-            for {
-                n, err := conn.Read(buffer)
+	           for {
+	               n, err := conn.Read(buffer)
 
-                if err != nil {
-                    log.Print(err)
-                    return
-                } 
+	               if err != nil {
+	                   log.Print(err)
+	                   return
+	               }
 
-                method, contents, err := rpc.DecodeMessage(buffer[:n])
+	               method, contents, err := rpc.DecodeMessage(buffer[:n])
 
-                if err != nil {
-                    log.Print(err)
-                    continue
-                }
+	               if err != nil {
+	                   log.Print(err)
+	                   continue
+	               }
 
-                handleMessage(logger, method, contents, state, conn)
+	               handleMessage(logger, method, contents, state, conn)
 
-                logger.Printf("%v", state)
+	               logger.Printf("%v", state)
 
-            }
-        }(conn)
-    }
-    */
+	           }
+	       }(conn)
+	   }
+	*/
 }
 
 func getLogger(filepath string) *log.Logger {
-    file, err := os.OpenFile(filepath, os.O_CREATE | os.O_WRONLY | os.O_TRUNC, 0666)
+	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 
-    if err != nil {
-        panic("unable to open log file")
-    }
+	if err != nil {
+		panic("unable to open log file")
+	}
 
-    return log.New(file, "[my-lsp]", log.Ldate | log.Ltime | log.Lshortfile)
+	return log.New(file, "[my-lsp]", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
 func handleMessage(logger *log.Logger, message []byte, state analysis.State) {
 
-    method, contents, err := rpc.DecodeMessage(message)
+	method, contents, err := rpc.DecodeMessage(message)
 
-    logger.Printf("Received method: %s\n", method)
-    logger.Printf("Contents: %s\n", contents)
+	logger.Printf("Received method: %s\n", method)
+	logger.Printf("Contents: %s\n", contents)
 
-    writer := os.Stdout
+	writer := os.Stdout
 
-    if err != nil {
-        logger.Printf("error decoding message, %s", err)
-    }
+	if err != nil {
+		logger.Printf("error decoding message, %s", err)
+	}
 
-    switch method {
-    case "initialize" :
-        var request lsp.InitializeRequst
-        if err := json.Unmarshal(contents, &request); err != nil {
-            logger.Printf("Error when unmarshal initialize: %s\n", err)
-            return
-        }
+	switch method {
+	case "initialize":
+		var request lsp.InitializeRequst
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error when unmarshal initialize: %s\n", err)
+			return
+		}
 
-        logger.Printf("Connected to: %s %s", request.Params.ClientInfo.Name, request.Params.ClientInfo.Version)
+		logger.Printf("Connected to: %s %s", request.Params.ClientInfo.Name, request.Params.ClientInfo.Version)
 
-        response := lsp.NewInitializeResponse(request.Id)
+		response := lsp.NewInitializeResponse(request.Id)
 
-        logger.Printf("Response: %s", rpc.EncodeMessage(response))
+		logger.Printf("Response: %s", rpc.EncodeMessage(response))
 
-        writer.Write([]byte(rpc.EncodeMessage(response)))
+		writer.Write([]byte(rpc.EncodeMessage(response)))
 
-        break;
+		break
 
-    case "textDocument/didOpen":
-        var request lsp.DidOpenTextDocumentNotification
-        if err := json.Unmarshal(contents, &request); err != nil {
-            logger.Printf("Error when unmarshal didopen: %s\n", err)
-            return
-        }
+	case "textDocument/didOpen":
+		var request lsp.DidOpenTextDocumentNotification
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error when unmarshal didopen: %s\n", err)
+			return
+		}
 
-        logger.Printf("Document opened: %s\nDocument Contents:\n%s\n", request.Params.TextDocument.Uri, request.Params.TextDocument.Text)
+		logger.Printf("Document opened: %s\nDocument Contents:\n%s\n", request.Params.TextDocument.Uri, request.Params.TextDocument.Text)
 
-        state.SetDocument(request.Params.TextDocument.Uri, request.Params.TextDocument.Text)
-        break;
+		state.SetDocument(request.Params.TextDocument.Uri, request.Params.TextDocument.Text)
+		break
 
-    case "textDocument/didChange":
-        var request lsp.DidChangeTextDocumentNotification
-        if err := json.Unmarshal(contents, &request); err != nil {
-            logger.Printf("Error when unmarshal didchange: %s\n", err)
-            return
-        }
+	case "textDocument/didChange":
+		var request lsp.DidChangeTextDocumentNotification
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error when unmarshal didchange: %s\n", err)
+			return
+		}
 
-        logger.Printf("Document changed: %s\nDocument Contents:\n%s\n", request.Params.TextDocument.Uri, request.Params.ContentChanges[0].Text)
+		logger.Printf("Document changed: %s\nDocument Contents:\n%s\n", request.Params.TextDocument.Uri, request.Params.ContentChanges[0].Text)
 
-        state.SetDocument(request.Params.TextDocument.Uri, request.Params.ContentChanges[0].Text)
+		state.SetDocument(request.Params.TextDocument.Uri, request.Params.ContentChanges[0].Text)
 
-        break;
+		break
 
-    case "textDocument/completion":
-        var request lsp.TextDocumentCompletionRequest
-        if err := json.Unmarshal(contents, &request); err != nil {
-            logger.Printf("Error when unmarshal completion: %s\n", err)
-            return
-        }
+	case "textDocument/completion":
+		var request lsp.TextDocumentCompletionRequest
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error when unmarshal completion: %s\n", err)
+			return
+		}
 
-        response := lsp.NewCompletionResponse(request.Id)
+		response := lsp.NewCompletionResponse(request.Id)
 
-        logger.Printf("Completion result: %v", response)
+		logger.Printf("Completion result: %v", response)
 
-        writer.Write([]byte(rpc.EncodeMessage(response)))
+		writer.Write([]byte(rpc.EncodeMessage(response)))
 
-        break;
-    }
+		break
+	}
 }
